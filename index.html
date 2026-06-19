@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Data Center</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #0D1B2A; color: #fff; padding: 2rem; }
+    h1 { font-size: 24px; margin-bottom: 8px; color: #4A90D9; }
+    .sub { font-size: 14px; color: #aaa; margin-bottom: 2rem; }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 2rem; }
+    .metric { background: #102535; border-radius: 10px; padding: 16px; }
+    .mlabel { font-size: 12px; color: #888; margin-bottom: 6px; }
+    .mval { font-size: 26px; font-weight: bold; color: #fff; }
+    .munit { font-size: 11px; color: #666; }
+    .section { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+    .servers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 2rem; }
+    .srv { background: #102535; border: 1px solid #1e3a50; border-radius: 12px; padding: 16px; }
+    .srh { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #444; }
+    .dot.on { background: #1D9E75; }
+    .sname { font-size: 14px; font-weight: bold; }
+    .sstatus { font-size: 11px; color: #666; margin-left: auto; }
+    .stask { font-size: 12px; color: #aaa; margin-bottom: 10px; min-height: 18px; }
+    .bar { height: 4px; background: #1e3a50; border-radius: 2px; overflow: hidden; }
+    .fill { height: 100%; border-radius: 2px; background: #1D9E75; width: 0%; transition: width .2s; }
+    .controls { display: flex; gap: 10px; margin-bottom: 2rem; flex-wrap: wrap; align-items: center; }
+    select { background: #102535; color: #fff; border: 1px solid #1e3a50; padding: 8px 12px; border-radius: 8px; font-size: 13px; }
+    button { background: transparent; color: #4A90D9; border: 1px solid #4A90D9; padding: 8px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+    button:hover { background: #4A90D9; color: #fff; }
+    .qlist { display: flex; flex-direction: column; gap: 6px; margin-bottom: 2rem; min-height: 36px; }
+    .qitem { display: flex; align-items: center; gap: 10px; background: #102535; border: 1px solid #1e3a50; border-radius: 8px; padding: 8px 14px; font-size: 12px; }
+    .badge { font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 99px; }
+    .bfifo { background: #0C447C; color: #B5D4F4; }
+    .bsjf { background: #085041; color: #9FE1CB; }
+    .qinfo { flex: 1; color: #aaa; }
+    .qburst { color: #555; font-size: 11px; }
+    .logbox { background: #102535; border-radius: 10px; padding: 12px 16px; max-height: 130px; overflow-y: auto; }
+    .litem { font-size: 12px; line-height: 1.9; font-family: monospace; color: #aaa; }
+    .ldone { color: #1D9E75; }
+    .lstart { color: #4A90D9; }
+    .empty { font-size: 12px; color: #555; text-align: center; padding: 8px 0; }
+  </style>
+</head>
+<body>
+
+  <h1>Simulador de Data Center</h1>
+  <p class="sub">Sistemas Operacionais I · Programação Orientada a Objetos</p>
+
+  <div class="controls">
+    <select id="algo">
+      <option value="fifo">FIFO</option>
+      <option value="sjf">SJF</option>
+    </select>
+    <button onclick="addTask()">+ Tarefa</button>
+    <button onclick="startSim()">▶ Iniciar</button>
+    <button onclick="resetSim()">↺ Resetar</button>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="mlabel">Concluídas</div><div class="mval" id="m1">0</div></div>
+    <div class="metric"><div class="mlabel">Espera média</div><div class="mval" id="m2">—</div><div class="munit">ms</div></div>
+    <div class="metric"><div class="mlabel">Throughput</div><div class="mval" id="m3">—</div><div class="munit">tarefas/s</div></div>
+    <div class="metric"><div class="mlabel">Na fila</div><div class="mval" id="m4">0</div></div>
+  </div>
+
+  <div class="section">Servidores</div>
+  <div class="servers">
+    <div class="srv">
+      <div class="srh"><div class="dot" id="d1"></div><span class="sname">Servidor 1</span><span class="sstatus" id="st1">ocioso</span></div>
+      <div class="stask" id="t1">—</div>
+      <div class="bar"><div class="fill" id="p1"></div></div>
+    </div>
+    <div class="srv">
+      <div class="srh"><div class="dot" id="d2"></div><span class="sname">Servidor 2</span><span class="sstatus" id="st2">ocioso</span></div>
+      <div class="stask" id="t2">—</div>
+      <div class="bar"><div class="fill" id="p2"></div></div>
+    </div>
+  </div>
+
+  <div class="section">Fila de tarefas</div>
+  <div class="qlist" id="qlist"><div class="empty">Nenhuma tarefa na fila</div></div>
+
+  <div class="section" style="margin-top:1.5rem">Log</div>
+  <div class="logbox" id="log"><div class="litem">Aguardando...</div></div>
+
+  <script>
+    let tasks=[],tid=1,done=0,waits=[],simStart=null,b1=false,b2=false,ivs=[];
+
+    function addTask(){
+      const burst=Math.floor(Math.random()*7)+1;
+      tasks.push({id:tid++,burst,arrival:Date.now()});
+      updateQ(); updateM();
+      log('Tarefa #'+(tid-1)+' adicionada — burst: '+tasks[tasks.length-1].burst+'s','lstart');
+    }
+
+    function getNext(){
+      if(!tasks.length) return null;
+      if(document.getElementById('algo').value==='sjf') tasks.sort((a,b)=>a.burst-b.burst);
+      return tasks.shift();
+    }
+
+    function runServer(n){
+      const task=getNext();
+      if(!task) return;
+      if(n===1) b1=true; else b2=true;
+      document.getElementById('d'+n).className='dot on';
+      document.getElementById('st'+n).textContent='executando';
+      document.getElementById('t'+n).textContent='Tarefa #'+task.id+' — burst: '+task.burst+'s';
+      waits.push(Date.now()-task.arrival);
+      updateQ();
+      log('Servidor '+n+' iniciou Tarefa #'+task.id,'lstart');
+      let el=0,total=task.burst*700,step=80;
+      const iv=setInterval(()=>{
+        el+=step;
+        document.getElementById('p'+n).style.width=Math.min(el/total*100,100)+'%';
+        if(el>=total){
+          clearInterval(iv); done++;
+          log('Servidor '+n+' concluiu Tarefa #'+task.id,'ldone');
+          document.getElementById('p'+n).style.width='0%';
+          document.getElementById('t'+n).textContent='—';
+          document.getElementById('d'+n).className='dot';
+          document.getElementById('st'+n).textContent='ocioso';
+          if(n===1) b1=false; else b2=false;
+          updateM();
+          if(tasks.length>0) setTimeout(()=>runServer(n),100);
+        }
+      },step);
+      ivs.push(iv);
+    }
+
+    function startSim(){
+      if(!tasks.length){ log('Adicione tarefas primeiro!',''); return; }
+      if(!simStart) simStart=Date.now();
+      if(!b1) runServer(1);
+      setTimeout(()=>{ if(!b2&&tasks.length>0) runServer(2); },250);
+    }
+
+    function resetSim(){
+      ivs.forEach(clearInterval); ivs=[];
+      tasks=[]; tid=1; done=0; waits=[]; simStart=null; b1=false; b2=false;
+      [1,2].forEach(n=>{
+        document.getElementById('d'+n).className='dot';
+        document.getElementById('st'+n).textContent='ocioso';
+        document.getElementById('t'+n).textContent='—';
+        document.getElementById('p'+n).style.width='0%';
+      });
+      document.getElementById('m1').textContent='0';
+      document.getElementById('m2').textContent='—';
+      document.getElementById('m3').textContent='—';
+      document.getElementById('m4').textContent='0';
+      document.getElementById('log').innerHTML='<div class="litem">Aguardando...</div>';
+      updateQ();
+    }
+
+    function updateQ(){
+      const el=document.getElementById('qlist'),algo=document.getElementById('algo').value;
+      if(!tasks.length){ el.innerHTML='<div class="empty">Nenhuma tarefa na fila</div>'; document.getElementById('m4').textContent='0'; return; }
+      const sorted=algo==='sjf'?[...tasks].sort((a,b)=>a.burst-b.burst):[...tasks];
+      el.innerHTML=sorted.map(t=>`<div class="qitem"><span class="badge b${algo}">${algo.toUpperCase()}</span><span class="qinfo">Tarefa #${t.id}</span><span class="qburst">burst: ${t.burst}s</span></div>`).join('');
+      document.getElementById('m4').textContent=tasks.length;
+    }
+
+    function updateM(){
+      document.getElementById('m1').textContent=done;
+      if(waits.length){ const avg=Math.round(waits.reduce((a,b)=>a+b,0)/waits.length); document.getElementById('m2').textContent=avg; }
+      if(simStart&&done>0){ const tp=(done/((Date.now()-simStart)/1000)).toFixed(2); document.getElementById('m3').textContent=tp; }
+    }
+
+    function log(msg,cls){
+      const box=document.getElementById('log'),d=document.createElement('div');
+      d.className='litem '+cls; d.textContent='› '+msg;
+      box.appendChild(d); box.scrollTop=box.scrollHeight;
+    }
+  </script>
+</body>
+</html>
