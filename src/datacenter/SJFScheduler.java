@@ -1,25 +1,27 @@
+cat > ~/projeto\ poo/src/datacenter/SJFScheduler.java << 'EOF'
 package datacenter;
 
 import java.util.PriorityQueue;
 
 public class SJFScheduler implements Scheduler {
 
-    private PriorityQueue<Task> fila = new PriorityQueue<>(
+    private final PriorityQueue<Task> fila = new PriorityQueue<>(
         (a, b) -> a.getBurstTime() - b.getBurstTime()
     );
 
     @Override
-    public void addTask(Task task) {
+    public synchronized void addTask(Task task) {
         fila.add(task);
     }
 
     @Override
-    public Task nextTask() {
+    public synchronized Task nextTask() {
         return fila.poll();
     }
 
     @Override
-    public boolean hasTasks() {
+    public synchronized boolean hasTasks() {
         return !fila.isEmpty();
     }
 }
+EOF

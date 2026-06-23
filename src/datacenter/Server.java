@@ -1,3 +1,4 @@
+cat > ~/projeto\ poo/src/datacenter/Server.java << 'EOF'
 package datacenter;
 
 public class Server implements Runnable {
@@ -14,9 +15,9 @@ public class Server implements Runnable {
 
     @Override
     public void run() {
-        while (scheduler.hasTasks()) {
+        while (true) {
             Task task = scheduler.nextTask();
-            if (task == null) continue;
+            if (task == null) break;
 
             task.setStartTime(System.currentTimeMillis());
             System.out.println("Servidor " + id + " executando " + task);
@@ -25,6 +26,7 @@ public class Server implements Runnable {
                 Thread.sleep(task.getBurstTime() * 100);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                break;
             }
 
             task.setEndTime(System.currentTimeMillis());
@@ -33,3 +35,4 @@ public class Server implements Runnable {
         }
     }
 }
+EOF
