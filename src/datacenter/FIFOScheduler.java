@@ -1,4 +1,3 @@
-cat > ~/projeto\ poo/src/datacenter/FIFOScheduler.java << 'EOF'
 package datacenter;
 
 import java.util.LinkedList;
@@ -23,4 +22,3 @@ public class FIFOScheduler implements Scheduler {
         return !fila.isEmpty();
     }
 }
-EOF

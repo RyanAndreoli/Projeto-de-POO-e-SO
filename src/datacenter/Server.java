@@ -1,4 +1,3 @@
-cat > ~/projeto\ poo/src/datacenter/Server.java << 'EOF'
 package datacenter;
 
 public class Server implements Runnable {
@@ -35,4 +34,3 @@ public class Server implements Runnable {
         }
     }
 }
-EOF

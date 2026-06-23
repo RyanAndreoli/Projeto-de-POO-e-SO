@@ -1,4 +1,3 @@
-cat > ~/projeto\ poo/src/datacenter/SJFScheduler.java << 'EOF'
 package datacenter;
 
 import java.util.PriorityQueue;
@@ -24,4 +23,3 @@ public class SJFScheduler implements Scheduler {
         return !fila.isEmpty();
     }
 }
-EOF
